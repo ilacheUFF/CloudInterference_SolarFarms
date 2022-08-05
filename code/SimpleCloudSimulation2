@@ -128,13 +128,16 @@ def area_coberta_painel(verm,verd,azul):
 
             
 def simula():
-    sensors = [Sensor(y=i) for i in range(300,600,distancia_sensores)]
+    sensors = [Sensor(x=600, y=i) for i in range(300,600,distancia_sensores)]
+    vsensors = [Sensor(x= 550,y=i) for i in range(300,600,distancia_sensores)]
     
-    clouds = [Ball(x=random.randint(400,500),y=random.randint(300,450),r=random.randint(10,30),vx=random.randint(15,20)) for i in range(30)]
+    clouds = [Ball(x=random.randint(400,500),y=random.randint(300,450),r=random.randint(10,30),vx=random.randint(30,30)) for i in range(30)]
     fazenda = Painel()
     historico_area_coberta = []
     vel_nuvem = 17  #Velocidade media de nuvem... neste momento não é calculada.. so estimada
-    desenho = True
+    vel_calculada = False
+    primeiro_toque = False
+    segundo_toque = False
     nuvens_falsas = []
     historico_fake_cloud = []
     while True:
@@ -147,7 +150,8 @@ def simula():
         fazenda.draw()
         for sensor in sensors:
             sensor.draw(color=(0,100,255))
-        
+        for vsensor in vsensors:
+            vsensor.draw(color=(0,100,255))
         area_coberta = 0
         area_coberta_fc = 0
         detectada = False
@@ -168,12 +172,28 @@ def simula():
                     if (cloud_touch_sensor(xs,ys,x,y,cloud.ball_radius)):
                         #Se o sensor esta detectando a nuvem, pergunta se não existe uma nuvem fake já representando
                         #essa ddeteção
+                        if segundo_toque == False:
+                            segundo_toque = True
+                            print("tocou de novo!")
+                            print(space.current_time_step)
+                            print(pygame.time.get_ticks())
+                            
                         if(any_fake_cloud_touch_sensor(nuvens_falsas,xs,ys)==False):
                             #Se não existe uma nuvem fake, é criada uma nova nuvem fake e 
                             #a nuvem fake é adiconada a um vetor com nuvens falsas
                             #print(xs,ys,x,y)
-                            nuvens_falsas.append(Ball(x = xs,y = ys, r=distancia_sensores/2,vx=vel_nuvem))                                              
+                            nuvens_falsas.append(Ball(x = xs,y = ys, r=distancia_sensores/2,vx=vel_nuvem))                                                                      
+                if primeiro_toque == False:
+                    for vsensor in vsensors:                    
+                        xs,ys = vsensor.body.position   
+                        if (cloud_touch_sensor(xs,ys,x,y,cloud.ball_radius))and primeiro_toque==False:
+                            primeiro_toque = True
+                            print("tocou!")
+                            print(pygame.time.get_ticks())
                             
+                
+                    
+                
         coberta_nuvem,descoberta_nuvem = area_coberta_painel(verm=100,verd=100,azul=100)    
         #Desenho e calculo de area de nuvens fakes                           
 
@@ -189,6 +209,7 @@ def simula():
         #print(display.get_at((60,40)))
         historico_area_coberta.append(coberta_nuvem/(coberta_nuvem+descoberta_nuvem))
         #historico_area_coberta.append(area_coberta)
+        
         historico_fake_cloud.append(coberta_fake/(coberta_fake+descoberta_fake))
         pygame.display.update()
         clock.tick(FPS)
