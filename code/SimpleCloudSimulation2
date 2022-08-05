@@ -9,33 +9,43 @@ import pygame
 import pymunk
 import random
 import matplotlib.pyplot as plt
+import math
 
 pygame.init()
-display = pygame.display.set_mode((1000,800))
+largura_janela = 1000
+altura_janela = 800
+
+x_painel = 800 
+y_painel = 400
+alt_p = 300
+lar_p = 100
+distancia_sensores = 30 #Numero divisivel por dois
+
+display = pygame.display.set_mode((largura_janela,altura_janela))
+
 pygame.display.set_caption('Cloud Simulator')
 clock = pygame.time.Clock()
-FPS = 40
-
+FPS = 60
 
 space = pymunk.Space()
 space.gravity = (0,0)
-ball_radius = 10
-
 
 
 def convert_coordinates(point):  #converte as coordenadas
     return point[0],800-point[1]
+
 #Velocidade de nuvems de 48km/h to 200km/h
 class Ball():
     def __init__(self,x = 400,y = 600, ct=1,vx=0,vy=0,r=10):
         self.body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)            #Cria um corpo
         self.body.position= x,y          #Define a posição do corpo
-        self.shape = pymunk.Circle(self.body, ball_radius) #Define o formato do corpo como circulo de radio 10
+        self.ball_radius = r
+        self.shape = pymunk.Circle(self.body, self.ball_radius) #Define o formato do corpo como circulo de radio 10
         self.shape.density = 1               #Densdidade do formato do corpo
         self.shape.elasticity = 1
         self.body.velocity = (vx,vy)
         self.shape.collision_type = ct
-        self.ball_radius = r
+        
         self.ball_area = 3.14159*r*r
         space.add(self.body,self.shape)          #o corpo e o seu formato é adiconado ao ambeinte de simulação
     def draw(self,color=(255,0,0)):
@@ -68,7 +78,7 @@ class Painel():
         pygame.draw.polygon(display,color, self.vertices,width=5)
 
 class Sensor():        
-    def __init__(self,x = 600,y = 400, r=3):
+    def __init__(self,x = 600,y = 400, r = 3):
         self.body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)            #Cria um corpo
         self.body.position= x,y          #Define a posição do corpo
         self.shape = pymunk.Circle(self.body, r) #Define o formato do corpo como circulo de radio 10
@@ -87,57 +97,112 @@ def cloud_inside_panel(x,y,r,xp,yp,alt_p,lar_p):
         if y>yp-lar_p and y<yp+lar_p:
             dentro = True
     return(dentro)
-def cloud_touch_sensor(xs,ys,xc,yc,r):    
+def cloud_touch_sensor(xs,ys,xc,yc,r): 
+    #Verifica se uma nuvem esta tocando o sensor
     dentro =False
-    if xs>xc-r and xs<xc+r:
-        if ys>yc-r and ys<yc+r:
+    distance = math.sqrt((xs-xc)*(xs-xc) + (ys-yc) * (ys-yc))
+    if distance <=r:
             dentro = True
     return(dentro)
+def any_fake_cloud_touch_sensor(list_fake_clouds,xs,ys):               
+    for fc in list_fake_clouds:
+        xfc,yfc = fc.body.position
+        if cloud_touch_sensor(xs,ys,xfc,yfc,fc.ball_radius):
+            return(True)
+
+    return(False)
+
+def area_coberta_painel(verm,verd,azul):
+    coberto = 0
+    descoberto = 0
+    for x_pp in range(x_painel-lar_p,x_painel+lar_p,5):
+        for y_pp in range(y_painel-alt_p,y_painel+alt_p,5):
+            rc,gc,bc,ac = display.get_at((x_pp, y_pp))
+            if (rc == verm) and (gc == verd) and (bc == azul):
+                coberto += 1
+            else:
+                descoberto += 1
+    return(coberto, descoberto)
             
+    
+
             
 def simula():
-    sensor = Sensor()
-    xs,ys = sensor.body.position
-    clouds = [Ball(x=random.randint(500,600),y=random.randint(350,450),r=random.randint(10,30),vx=random.randint(15,20)) for i in range(15)]
+    sensors = [Sensor(y=i) for i in range(300,600,distancia_sensores)]
+    
+    clouds = [Ball(x=random.randint(400,500),y=random.randint(300,450),r=random.randint(10,30),vx=random.randint(15,20)) for i in range(30)]
     fazenda = Painel()
     historico_area_coberta = []
     vel_nuvem = 17  #Velocidade media de nuvem... neste momento não é calculada.. so estimada
     desenho = True
     nuvens_falsas = []
+    historico_fake_cloud = []
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return(historico_area_coberta,fazenda.area)
+                print (len(nuvens_falsas))
+                return(historico_area_coberta,historico_fake_cloud,fazenda.area)
         
         display.fill((255,255,255))
         fazenda.draw()
-        sensor.draw(color=(0,100,255))
-        #ball_1.draw()
+        for sensor in sensors:
+            sensor.draw(color=(0,100,255))
+        
         area_coberta = 0
+        area_coberta_fc = 0
+        detectada = False
+        #Analise para cada cloud
         
         for cloud in clouds:
             cloud.draw(color=(100,100,100))
             x,y = cloud.body.position
             xp,yp = fazenda.body.position
+            #Verificar se a nuvem esta dentro da fazenda solar, para calcuar a area de cobertura
             nuvem_no_painel = cloud_inside_panel(x,y,cloud.ball_radius,xp,yp,fazenda.alt_p,fazenda.lar_p)
             if nuvem_no_painel:
                 area_coberta +=cloud.ball_area                
-            if (cloud_touch_sensor(xs,ys,x,y,cloud.ball_radius)) :
-               nuvens_falsas.append( Ball(x = 600,y = 400, r=3,vx=vel_nuvem))                
-               
-        for nuvem_f in nuvens_falsas:
-            nuvem_f.draw((0,200,255))
-        historico_area_coberta.append(area_coberta)
+            else:
+            #Se a nuvem não esta na fazenda solar, verifica se algum sensor a esta detectando                
+                for sensor in sensors:                    
+                    xs,ys = sensor.body.position   
+                    if (cloud_touch_sensor(xs,ys,x,y,cloud.ball_radius)):
+                        #Se o sensor esta detectando a nuvem, pergunta se não existe uma nuvem fake já representando
+                        #essa ddeteção
+                        if(any_fake_cloud_touch_sensor(nuvens_falsas,xs,ys)==False):
+                            #Se não existe uma nuvem fake, é criada uma nova nuvem fake e 
+                            #a nuvem fake é adiconada a um vetor com nuvens falsas
+                            #print(xs,ys,x,y)
+                            nuvens_falsas.append(Ball(x = xs,y = ys, r=distancia_sensores/2,vx=vel_nuvem))                                              
+                            
+        coberta_nuvem,descoberta_nuvem = area_coberta_painel(verm=100,verd=100,azul=100)    
+        #Desenho e calculo de area de nuvens fakes                           
+
+        for nuvem_fake in nuvens_falsas:
+            fcx,fcy = nuvem_fake.body.position
+            fake_no_painel = cloud_inside_panel(fcx,fcy,nuvem_fake.ball_radius,xp,yp,fazenda.alt_p,fazenda.lar_p)
+            if fake_no_painel:
+                area_coberta_fc +=nuvem_fake.ball_area                
+            nuvem_fake.draw((0,200,255))
+
+        coberta_fake,descoberta_fake = area_coberta_painel(verm=0,verd=200,azul=255)    
+        #print(display.get_at((600,400)))
+        #print(display.get_at((60,40)))
+        historico_area_coberta.append(coberta_nuvem/(coberta_nuvem+descoberta_nuvem))
+        #historico_area_coberta.append(area_coberta)
+        historico_fake_cloud.append(coberta_fake/(coberta_fake+descoberta_fake))
         pygame.display.update()
         clock.tick(FPS)
         space.step(1/FPS)
 
 
-hac ,  area_fazenda = simula()  
+hac , hacf, area_fazenda = simula()  
 pygame.quit()
 #%% Plota os resultados
-area_coberta = [x/area_fazenda for x in hac]
-plt.plot(area_coberta)
+#area_coberta = [x/area_fazenda for x in hac]
+#area_coberta_fake = [x/area_fazenda for x in hacf]
+plt.plot(hac)
+plt.plot(hacf)
+plt.legend(["Real","Simulado"])
 plt.show()
 
 #%% prova
