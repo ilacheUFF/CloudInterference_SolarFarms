@@ -8,17 +8,19 @@ Created on Fri Jul 22 19:45:42 2022
 import pygame
 import pymunk
 import random
+import matplotlib.pyplot as plt
 
 pygame.init()
 display = pygame.display.set_mode((1000,800))
 pygame.display.set_caption('Cloud Simulator')
 clock = pygame.time.Clock()
-FPS = 60
+FPS = 40
 
 
 space = pymunk.Space()
 space.gravity = (0,0)
 ball_radius = 10
+
 
 
 def convert_coordinates(point):  #converte as coordenadas
@@ -34,30 +36,37 @@ class Ball():
         self.body.velocity = (vx,vy)
         self.shape.collision_type = ct
         self.ball_radius = r
+        self.ball_area = 3.14159*r*r
         space.add(self.body,self.shape)          #o corpo e o seu formato é adiconado ao ambeinte de simulação
     def draw(self,color=(255,0,0)):
         (x, y) = convert_coordinates(self.body.position)  #Pega as coordenadas do corpo rigido
         #if self.shape.collision_type != 2 :
         pygame.draw.circle(display,color, (int(x),int(y)), self.ball_radius)
+
+    
     def area_in_panel(self,x_vline):
         (x, y) = convert_coordinates(self.body.position)  #Pega as coordenadas do corpo rigido
         area = 10
 
 class Painel():
-    def __init__(self,x = 800,y = 400, vertices=[(700,300),(700,600),(850,600),(850,300)]):
+    def __init__(self,x = 800,y = 400, alt_p=300, lar_p=100):
         self.body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)            #Cria um corpo
         self.body.position= x,y          #Define a posição do corpo
-        self.shape = pymunk.Poly(self.body, vertices) #Define o formato do corpo como circulo de radio 10
+        self.vertices = [(x-lar_p,y-alt_p),(x+lar_p,y-alt_p),(x+lar_p,y+alt_p),(x-lar_p,y+alt_p)]
+        self.shape = pymunk.Poly(self.body, self.vertices) #Define o formato do corpo como circulo de radio 10
         self.shape.density = 1               #Densdidade do formato do corpo
         self.shape.elasticity = 1
-        self.body.velocity = (0,0)
-        self.vertices = vertices
+        self.body.velocity = (0,0) 
+        self.alt_p = alt_p
+        self.lar_p = lar_p      
+        self.area =  2*alt_p + 2*lar_p      
         space.add(self.body,self.shape)          #o corpo e o seu formato é adiconado ao ambeinte de simulação
         #self.shape.collision_type = 1
         #self.ball_radius = r
     def draw(self,color=(255,0,0)):
         (x, y) = convert_coordinates(self.body.position)  #Pega as coordenadas do corpo rigido
         pygame.draw.polygon(display,color, self.vertices,width=5)
+
 class Sensor():        
     def __init__(self,x = 600,y = 400, r=3):
         self.body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)            #Cria um corpo
@@ -72,33 +81,49 @@ class Sensor():
         (x, y) = convert_coordinates(self.body.position)  #Pega as coordenadas do corpo rigido
         pygame.draw.circle(display,color, (int(x),int(y)), self.radius)  
 
+def cloud_inside_panel(x,y,r,xp,yp,alt_p,lar_p):
+    dentro =False
+    if x>xp-lar_p and x<xp+lar_p:
+        if y>yp-lar_p and y<yp+lar_p:
+            dentro = True
+    return(dentro)
+    
             
             
-            
-def game():
-    #ball_1 = Ball(200,150,r=10)
+def simula():
     sensor = Sensor()
-    clouds = [Ball(x=random.randint(100,300),y=random.randint(350,450),r=random.randint(10,30),vx=random.randint(15,20)) for i in range(10)]
-    #string_1 = String(ball_1.body,(300.0,550),"position")
-    #string_1 = String(ball_1.body,ball_3.body,"body")
-    #string_2 = String(ball_1.body,ball_2.body,"body")
+    clouds = [Ball(x=random.randint(500,600),y=random.randint(350,450),r=random.randint(10,30),vx=random.randint(15,20)) for i in range(10)]
     fazenda = Painel()
+    historico_area_coberta = []
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return
+                return(historico_area_coberta,fazenda.area)
         
         display.fill((255,255,255))
         fazenda.draw()
         sensor.draw(color=(0,100,255))
         #ball_1.draw()
+        area_coberta = 0
         for cloud in clouds:
             cloud.draw(color=(100,100,100))
-        #string_2.draw()
-        #string_1.draw()
-        
+            x,y = cloud.body.position
+            xp,yp = fazenda.body.position
+            nuvem_no_painel = cloud_inside_panel(x,y,cloud.ball_radius,xp,yp,fazenda.alt_p,fazenda.lar_p)
+            if nuvem_no_painel:
+                area_coberta +=cloud.ball_area
+        historico_area_coberta.append(area_coberta)
         pygame.display.update()
         clock.tick(FPS)
         space.step(1/FPS)
-game()    
+
+
+hac ,  area_fazenda = simula()  
 pygame.quit()
+#%% Plota os resultados
+area_coberta = [x/area_fazenda for x in hac]
+plt.plot(area_coberta)
+plt.show()
+
+#%% prova
+
