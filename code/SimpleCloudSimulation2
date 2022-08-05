@@ -87,14 +87,23 @@ def cloud_inside_panel(x,y,r,xp,yp,alt_p,lar_p):
         if y>yp-lar_p and y<yp+lar_p:
             dentro = True
     return(dentro)
-    
+def cloud_touch_sensor(xs,ys,xc,yc,r):    
+    dentro =False
+    if xs>xc-r and xs<xc+r:
+        if ys>yc-r and ys<yc+r:
+            dentro = True
+    return(dentro)
             
             
 def simula():
     sensor = Sensor()
-    clouds = [Ball(x=random.randint(500,600),y=random.randint(350,450),r=random.randint(10,30),vx=random.randint(15,20)) for i in range(10)]
+    xs,ys = sensor.body.position
+    clouds = [Ball(x=random.randint(500,600),y=random.randint(350,450),r=random.randint(10,30),vx=random.randint(15,20)) for i in range(15)]
     fazenda = Painel()
     historico_area_coberta = []
+    vel_nuvem = 17  #Velocidade media de nuvem... neste momento não é calculada.. so estimada
+    desenho = True
+    nuvens_falsas = []
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -105,13 +114,19 @@ def simula():
         sensor.draw(color=(0,100,255))
         #ball_1.draw()
         area_coberta = 0
+        
         for cloud in clouds:
             cloud.draw(color=(100,100,100))
             x,y = cloud.body.position
             xp,yp = fazenda.body.position
             nuvem_no_painel = cloud_inside_panel(x,y,cloud.ball_radius,xp,yp,fazenda.alt_p,fazenda.lar_p)
             if nuvem_no_painel:
-                area_coberta +=cloud.ball_area
+                area_coberta +=cloud.ball_area                
+            if (cloud_touch_sensor(xs,ys,x,y,cloud.ball_radius)) :
+               nuvens_falsas.append( Ball(x = 600,y = 400, r=3,vx=vel_nuvem))                
+               
+        for nuvem_f in nuvens_falsas:
+            nuvem_f.draw((0,200,255))
         historico_area_coberta.append(area_coberta)
         pygame.display.update()
         clock.tick(FPS)
