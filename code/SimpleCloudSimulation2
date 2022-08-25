@@ -127,7 +127,7 @@ def simula():
     #Define os sensores, os vsensor (primeiros sensores a esquerda) e as nuvens
     sensors = [Sensor(x=600, y=i) for i in range(300,600,distancia_sensores)]
     vsensors = [Sensor(x= 550,y=i) for i in range(300,600,distancia_sensores)]  
-    clouds = [Ball(x=random.randint(400,500),y=random.randint(300,600),r=random.randint(10,30),vx=random.randint(10,30)) for i in range(20)]
+    clouds = [Ball(x=random.randint(400,500),y=random.randint(350,550),r=random.randint(10,35),vx=random.randint(10,35)) for i in range(30)]
     
     #Cria a Fazenda solar
     fazenda = Painel()
@@ -234,12 +234,16 @@ def simula():
 hac , hacf, area_fazenda = simula()  
 pygame.quit()
 #%% Plota os resultados
+sum_hac = sum(hac)
+sum_hacf = sum(hacf)
 #area_coberta = [x/area_fazenda for x in hac]
 #area_coberta_fake = [x/area_fazenda for x in hacf]
 plt.plot(hac)
 plt.plot(hacf)
-plt.legend(["Real","Simulado"])
+area = ( sum_hacf / sum_hac) *100
+plt.legend([f'Real =  {sum_hac:0.2f}',f"Simulado = {sum_hacf:0.2f}"])
+plt.title(f" Sombra total simulada corresponde ao {area:0.1f} % do real")
+
 plt.show()
 
 #%% prova
-
