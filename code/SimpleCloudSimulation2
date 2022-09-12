@@ -10,23 +10,25 @@ import pymunk
 import random
 import matplotlib.pyplot as plt
 import math
+import numpy as np
+#%%
 
 pygame.init()           #Inicia o Pygame
-largura_janela = 1000   #Define as dimensões da Janela
+largura_janela = 1300   #Define as dimensões da Janela
 altura_janela = 800
 
-x_painel = 800          #Define as dimensões e local da fazenda solar
+x_painel = 1000          #Define as dimensões e local da fazenda solar
 y_painel = 400
 alt_p = 300
-lar_p = 100
+lar_p = 150
 
-distancia_sensores = 30 #Numero divisivel por dois, distancia vertical dos sensores
+distancia_sensores = 10 #Numero divisivel por dois, distancia vertical dos sensores
 
 display = pygame.display.set_mode((largura_janela,altura_janela)) #Mostra a janela
 
 pygame.display.set_caption('Cloud Simulator')   #Muda o titulo da janela
 clock = pygame.time.Clock()                     #Inicia o relogio
-FPS = 60                                        #Con cuantos FPS vai rodar a simulação
+FPS = 30                                       #Con cuantos FPS vai rodar a simulação
 
 space = pymunk.Space()                          #Define o pymunk para a simulação fisica
 space.gravity = (0,0)                           #Define o valor da gravidade em coordenadas x e Y
@@ -56,7 +58,7 @@ class Ball():
 
 
 class Painel():
-    def __init__(self,x = 800,y = 400, alt_p=300, lar_p=100):
+    def __init__(self,x = x_painel,y =y_painel , alt_p=alt_p, lar_p=lar_p):
         self.body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)            #Cria um corpo
         self.body.position= x,y          #Define a posição do corpo
         self.vertices = [(x-lar_p,y-alt_p),(x+lar_p,y-alt_p),(x+lar_p,y+alt_p),(x-lar_p,y+alt_p)]
@@ -125,9 +127,10 @@ def area_coberta_painel(verm,verd,azul): #faz uma barredura pela geometria do pa
             
 def simula():
     #Define os sensores, os vsensor (primeiros sensores a esquerda) e as nuvens
-    sensors = [Sensor(x=600, y=i) for i in range(300,600,distancia_sensores)]
-    vsensors = [Sensor(x= 550,y=i) for i in range(300,600,distancia_sensores)]  
-    clouds = [Ball(x=random.randint(400,500),y=random.randint(350,550),r=random.randint(10,35),vx=random.randint(10,35)) for i in range(30)]
+    sensors = [Sensor(x=800, y=i) for i in range(100,700,distancia_sensores)]
+    vsensors = [Sensor(x= 750,y=i) for i in range(100,700,distancia_sensores)] 
+    print("Quantidade de sensores = ",len(vsensors))
+    clouds = [Ball(x=random.randint(600,700),y=random.randint(100,600),r=random.randint(1,15),vx=random.randint(110,120)) for i in range(40)]
     
     #Cria a Fazenda solar
     fazenda = Painel()
@@ -138,6 +141,7 @@ def simula():
     vel_calculada = False
     primeiro_toque = False
     segundo_toque = False
+    calculo_cobertura = False   ##Indica que a simulação já esta calculando a covertura das nuvens                            
     tempo_1toque = 0
     tempo_2toque = 0
     nuvens_falsas = []
@@ -209,12 +213,14 @@ def simula():
         #Calculo da área coberta no painel solar.. área pelas nuvems  simuladas        
         coberta_nuvem,descoberta_nuvem = area_coberta_painel(verm=100,verd=100,azul=100)    
         
+            
         #Desenho e calculo de area de nuvens fakes                           
         for nuvem_fake in nuvens_falsas:
             fcx,fcy = nuvem_fake.body.position
             fake_no_painel = cloud_inside_panel(fcx,fcy,nuvem_fake.ball_radius,xp,yp,fazenda.alt_p,fazenda.lar_p)
             if fake_no_painel:
-                area_coberta_fc +=nuvem_fake.ball_area                
+                area_coberta_fc +=nuvem_fake.ball_area
+                calculo_cobertura = True   ##Indica que a simulação já esta calculando a covertura das nuvens                            
             nuvem_fake.draw((0,200,255))
         
         #Calculo da area coberta pelas nuvens fakes    
@@ -228,18 +234,31 @@ def simula():
         pygame.display.update()
         clock.tick(FPS)
         space.step(1/FPS)
-
+        
+        if calculo_cobertura == True and coberta_nuvem == 0 and primeiro_toque == True:
+            return(historico_area_coberta,historico_fake_cloud,fazenda.area)
+            
+#%%
 ####### SIMULAÇÃO PRINCIPAL
 
 hac , hacf, area_fazenda = simula()  
 pygame.quit()
+#%% função da media movel
+def moving_average(a, n=3) :
+    ret = np.cumsum(a, dtype=float)
+    ret[n:] = ret[n:] - ret[:-n]
+    return ret[n - 1:] / n
+
 #%% Plota os resultados
+
 sum_hac = sum(hac)
 sum_hacf = sum(hacf)
 #area_coberta = [x/area_fazenda for x in hac]
 #area_coberta_fake = [x/area_fazenda for x in hacf]
-plt.plot(hac)
-plt.plot(hacf)
+
+
+plt.plot(moving_average(hac,5))
+plt.plot(moving_average(hacf,5))
 area = ( sum_hacf / sum_hac) *100
 plt.legend([f'Real =  {sum_hac:0.2f}',f"Simulado = {sum_hacf:0.2f}"])
 plt.title(f" Sombra total simulada corresponde ao {area:0.1f} % do real")
