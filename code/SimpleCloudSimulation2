@@ -130,7 +130,7 @@ def simula():
     sensors = [Sensor(x=800, y=i) for i in range(100,700,distancia_sensores)]
     vsensors = [Sensor(x= 750,y=i) for i in range(100,700,distancia_sensores)] 
     print("Quantidade de sensores = ",len(vsensors))
-    clouds = [Ball(x=random.randint(600,700),y=random.randint(100,600),r=random.randint(1,15),vx=random.randint(110,120)) for i in range(40)]
+    clouds = [Ball(x=random.randint(600,700),y=random.randint(100,600),r=random.randint(1,15),vx=random.randint(200,200)) for i in range(40)]
     
     #Cria a Fazenda solar
     fazenda = Painel()
@@ -235,13 +235,20 @@ def simula():
         clock.tick(FPS)
         space.step(1/FPS)
         
-        if calculo_cobertura == True and coberta_nuvem == 0 and primeiro_toque == True:
+        if sum(historico_area_coberta) > 0 and coberta_nuvem == 0 and primeiro_toque == True:
             return(historico_area_coberta,historico_fake_cloud,fazenda.area)
             
 #%%
 ####### SIMULAÇÃO PRINCIPAL
-
-hac , hacf, area_fazenda = simula()  
+nsimula= 10
+varea = []
+for nsim in range (nsimula):
+    hac , hacf, area_fazenda = simula()  
+    sum_hac = sum(hac)
+    sum_hacf = sum(hacf)
+    area = ( sum_hacf / sum_hac) *100
+    varea.append(area)
+print(varea)    
 pygame.quit()
 #%% função da media movel
 def moving_average(a, n=3) :
@@ -251,18 +258,18 @@ def moving_average(a, n=3) :
 
 #%% Plota os resultados
 
-sum_hac = sum(hac)
-sum_hacf = sum(hacf)
+
 #area_coberta = [x/area_fazenda for x in hac]
 #area_coberta_fake = [x/area_fazenda for x in hacf]
 
 
 plt.plot(moving_average(hac,5))
 plt.plot(moving_average(hacf,5))
-area = ( sum_hacf / sum_hac) *100
+
 plt.legend([f'Real =  {sum_hac:0.2f}',f"Simulado = {sum_hacf:0.2f}"])
 plt.title(f" Sombra total simulada corresponde ao {area:0.1f} % do real")
 
 plt.show()
 
 #%% prova
+print(f"Valor medio de calculo de area = {np.mean(varea)},  Em {nsimula}" )
