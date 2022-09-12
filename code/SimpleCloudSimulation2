@@ -235,15 +235,20 @@ def simula():
         clock.tick(FPS)
         space.step(1/FPS)
         
-        if sum(historico_area_coberta) > 0 and coberta_nuvem == 0 and primeiro_toque == True:
+        #if sum(historico_area_coberta) > 0 and coberta_nuvem == 0 and primeiro_toque == True:
+        if len(historico_area_coberta) == 130:    
             return(historico_area_coberta,historico_fake_cloud,fazenda.area)
             
 #%%
 ####### SIMULAÇÃO PRINCIPAL
 nsimula= 10
 varea = []
+mhac = []
+mhacf = []
 for nsim in range (nsimula):
     hac , hacf, area_fazenda = simula()  
+    mhac.append(hac)
+    mhacf.append(hacf)
     sum_hac = sum(hac)
     sum_hacf = sum(hacf)
     area = ( sum_hacf / sum_hac) *100
@@ -273,3 +278,8 @@ plt.show()
 
 #%% prova
 print(f"Valor medio de calculo de area = {np.mean(varea)},  Em {nsimula}" )
+for n in range(nsimula):
+    plt.plot(moving_average(mhac[n],5))
+    #plt.plot(mhacf[n])    
+
+plt.show()
