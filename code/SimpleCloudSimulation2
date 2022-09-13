@@ -11,9 +11,8 @@ import random
 import matplotlib.pyplot as plt
 import math
 import numpy as np
+import time
 #%%
-
-pygame.init()           #Inicia o Pygame
 largura_janela = 1300   #Define as dimensões da Janela
 altura_janela = 800
 
@@ -24,14 +23,6 @@ lar_p = 150
 
 distancia_sensores = 10 #Numero divisivel por dois, distancia vertical dos sensores
 
-display = pygame.display.set_mode((largura_janela,altura_janela)) #Mostra a janela
-
-pygame.display.set_caption('Cloud Simulator')   #Muda o titulo da janela
-clock = pygame.time.Clock()                     #Inicia o relogio
-FPS = 30                                       #Con cuantos FPS vai rodar a simulação
-
-space = pymunk.Space()                          #Define o pymunk para a simulação fisica
-space.gravity = (0,0)                           #Define o valor da gravidade em coordenadas x e Y
 
 
 def convert_coordinates(point):  #converte as coordenadas 
@@ -55,6 +46,8 @@ class Ball():
         (x, y) = convert_coordinates(self.body.position)  #Pega as coordenadas do corpo rigido
 
         pygame.draw.circle(display,color, (int(x),int(y)), self.ball_radius)
+    def remove(self):
+        space.remove(self.body,self.shape)
 
 
 class Painel():
@@ -125,12 +118,14 @@ def area_coberta_painel(verm,verd,azul): #faz uma barredura pela geometria do pa
     
 
             
-def simula():
+def simula():    
+  
+    
     #Define os sensores, os vsensor (primeiros sensores a esquerda) e as nuvens
     sensors = [Sensor(x=800, y=i) for i in range(100,700,distancia_sensores)]
     vsensors = [Sensor(x= 750,y=i) for i in range(100,700,distancia_sensores)] 
     print("Quantidade de sensores = ",len(vsensors))
-    clouds = [Ball(x=random.randint(550,700),y=random.randint(100,600),r=random.randint(1,20),vx=random.randint(200,200)) for i in range(50)]
+    clouds = [Ball(x=random.randint(550,700),y=random.randint(100,700),r=random.randint(1,20),vx=random.randint(200,200)) for i in range(50)]
     
     #Cria a Fazenda solar
     fazenda = Painel()
@@ -236,18 +231,33 @@ def simula():
         space.step(1/FPS)
         
         #if sum(historico_area_coberta) > 0 and coberta_nuvem == 0 and primeiro_toque == True:
-        if len(historico_area_coberta) == 130:    
+        if len(historico_area_coberta) == 130:   
+            for nuvem in clouds:
+                nuvem.remove()
+            for nuvemf in nuvens_falsas:
+                nuvemf.remove()
             return(historico_area_coberta,historico_fake_cloud,fazenda.area)
             
 #%%
 ####### SIMULAÇÃO PRINCIPAL
-nsimula= 10
+nsimula= 500
 varea = np.zeros(nsimula)
 
 mhac =  np.zeros((nsimula,130))
 mhacf = np.zeros((nsimula,130))
 
 for nsim in range (nsimula):
+    inicio = time.time()
+    pygame.init()           #Inicia o Pygame
+    
+    display = pygame.display.set_mode((largura_janela,altura_janela)) #Mostra a janela
+
+    pygame.display.set_caption('Cloud Simulator')   #Muda o titulo da janela
+    clock = pygame.time.Clock()                     #Inicia o relogio
+    FPS = 30                                       #Con cuantos FPS vai rodar a simulação
+
+    space = pymunk.Space()                          #Define o pymunk para a simulação fisica
+    space.gravity = (0,0)                           #Define o valor da gravidade em coordenadas x e Y
     hac , hacf, area_fazenda = simula()  
     
     
@@ -262,8 +272,10 @@ for nsim in range (nsimula):
     area = ( sum_hacf / sum_hac) *100
     varea[nsim]=area
     
-pygame.display.quit()
-pygame.quit()
+    pygame.display.quit()
+    pygame.quit()
+    fim = time.time()
+    print(f"Tempo de execução = {fim-inicio}")
 
 print(varea)    
 
@@ -290,42 +302,38 @@ plt.show()
 
 #%% prova
 print(f"Valor medio de calculo de area = {np.mean(varea)},  Em {nsimula}" )
+
+
 #%%
-for n in range(nsimula):
-    data = moving_average(mhac[n],5)
-    xdata = range(len(data))
-    plt.plot(xdata,data)
+if nsimula>1:
+    max_mhac = np.max(mhac,axis=0)
+    max_mhac = moving_average(max_mhac,5)
+    max_mhacf = np.max(mhacf,axis=0)
+    max_mhacf = moving_average(max_mhacf,5)
+    min_mhac = np.min(mhac,axis=0)
+    min_mhac = moving_average(min_mhac,5)
+    min_mhacf = np.min(mhacf,axis=0)
+    min_mhacf = moving_average(min_mhacf,5)
+    mean_mhacf = np.mean(mhacf,axis=0)
+    mean_mhacf = moving_average(mean_mhacf,5)
+    mean_mhac = np.mean(mhac,axis=0)
+    mean_mhac = moving_average(mean_mhac,5)
+    xdata = range(len(min_mhac))
+    plt.fill_between(xdata, max_mhac, min_mhac,alpha = 0.3,label='_nolegend_')
+    plt.plot(xdata, mean_mhac,linewidth =3)
+    plt.fill_between(xdata, max_mhacf, min_mhacf,alpha = 0.3,label='_nolegend_')
+    plt.plot(xdata, mean_mhacf,linewidth =3)
+    plt.xlabel("tempo")
+    plt.ylabel("Sombra (%)")
+    plt.legend({"Sombra_nuvens","Sombra_simula"})
+    plt.title(f"Sombra de {nsimula} simulações / Media  = {np.mean(varea):0.2f}% real")
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+    plt.show()
     
-    #plt.plot(mhacf[n])    
-
-plt.show()
+    
 
 #%%
-max_mhac = np.max(mhac,axis=0)
-max_mhac = moving_average(max_mhac,5)
-max_mhacf = np.max(mhacf,axis=0)
-max_mhacf = moving_average(max_mhacf,5)
-min_mhac = np.min(mhac,axis=0)
-min_mhac = moving_average(min_mhac,5)
-min_mhacf = np.min(mhacf,axis=0)
-min_mhacf = moving_average(min_mhacf,5)
-mean_mhacf = np.mean(mhacf,axis=0)
-mean_mhacf = moving_average(mean_mhacf,5)
-mean_mhac = np.mean(mhac,axis=0)
-mean_mhac = moving_average(mean_mhac,5)
-
-xdata = range(len(min_mhac))
-
-plt.fill_between(xdata, max_mhac, min_mhac,alpha = 0.3,label='_nolegend_')
-plt.plot(xdata, mean_mhac)
-plt.fill_between(xdata, max_mhacf, min_mhacf,alpha = 0.3,label='_nolegend_')
-plt.plot(xdata, mean_mhacf)
-plt.xlabel("tempo")
-plt.ylabel("Sombra (%)")
-plt.legend({"Sombra_nuvens","Sombra_simula"})
-plt.title(f"Acerto  = {np.mean(varea):0.2f}%")
-plt.show()
-
-#%%
-plt.hist(varea)
+plt.hist(varea,bins = 50)
+plt.xlabel("Real / Simulado (%)")
 plt.show()
