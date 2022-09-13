@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Fri Jul 22 19:45:42 2022
-
 @author: ivanovich
 """
 import pygame
@@ -21,7 +20,7 @@ y_painel = 400
 alt_p = 300
 lar_p = 150
 
-distancia_sensores = 10 #Numero divisivel por dois, distancia vertical dos sensores
+distancia_sensores = 50 #Numero divisivel por dois, distancia vertical dos sensores
 
 
 
@@ -216,7 +215,7 @@ def simula():
             if fake_no_painel:
                 area_coberta_fc +=nuvem_fake.ball_area
                 calculo_cobertura = True   ##Indica que a simulação já esta calculando a covertura das nuvens                            
-            nuvem_fake.draw((0,200,255))
+            nuvem_fake.draw((0,200,255))  #Desenha a nuvem fake
         
         #Calculo da area coberta pelas nuvens fakes    
         coberta_fake,descoberta_fake = area_coberta_painel(verm=0,verd=200,azul=255)    
@@ -240,11 +239,12 @@ def simula():
             
 #%%
 ####### SIMULAÇÃO PRINCIPAL
-nsimula= 500
+nsimula= 10
 varea = np.zeros(nsimula)
 
 mhac =  np.zeros((nsimula,130))
 mhacf = np.zeros((nsimula,130))
+
 
 for nsim in range (nsimula):
     inicio = time.time()
@@ -254,7 +254,7 @@ for nsim in range (nsimula):
 
     pygame.display.set_caption('Cloud Simulator')   #Muda o titulo da janela
     clock = pygame.time.Clock()                     #Inicia o relogio
-    FPS = 30                                       #Con cuantos FPS vai rodar a simulação
+    FPS = 40                                       #Con cuantos FPS vai rodar a simulação
 
     space = pymunk.Space()                          #Define o pymunk para a simulação fisica
     space.gravity = (0,0)                           #Define o valor da gravidade em coordenadas x e Y
@@ -291,9 +291,9 @@ def moving_average(a, n=3) :
 #area_coberta = [x/area_fazenda for x in hac]
 #area_coberta_fake = [x/area_fazenda for x in hacf]
 
-
-plt.plot(moving_average(hac,5))
-plt.plot(moving_average(hacf,5))
+colornuvem = color=(0.4,0.4,0.4,1)
+plt.plot(moving_average(hac,5),color=colornuvem)
+plt.plot(moving_average(hacf,5),color=(0,0,1,1), linestyle="dashdot" )
 
 plt.legend([f'Real =  {sum_hac:0.2f}',f"Simulado = {sum_hacf:0.2f}"])
 plt.title(f" Sombra total simulada corresponde ao {area:0.1f} % do real")
@@ -319,8 +319,9 @@ if nsimula>1:
     mean_mhac = np.mean(mhac,axis=0)
     mean_mhac = moving_average(mean_mhac,5)
     xdata = range(len(min_mhac))
-    plt.fill_between(xdata, max_mhac, min_mhac,alpha = 0.3,label='_nolegend_')
-    plt.plot(xdata, mean_mhac,linewidth =3)
+    
+    plt.fill_between(xdata, max_mhac, min_mhac,alpha = 0.3,label='_nolegend_',color=colornuvem)
+    plt.plot(xdata, mean_mhac,linewidth =3,color=colornuvem)
     plt.fill_between(xdata, max_mhacf, min_mhacf,alpha = 0.3,label='_nolegend_')
     plt.plot(xdata, mean_mhacf,linewidth =3)
     plt.xlabel("tempo")
@@ -337,3 +338,4 @@ if nsimula>1:
 plt.hist(varea,bins = 50)
 plt.xlabel("Real / Simulado (%)")
 plt.show()
+
