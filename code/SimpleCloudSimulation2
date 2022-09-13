@@ -130,7 +130,7 @@ def simula():
     sensors = [Sensor(x=800, y=i) for i in range(100,700,distancia_sensores)]
     vsensors = [Sensor(x= 750,y=i) for i in range(100,700,distancia_sensores)] 
     print("Quantidade de sensores = ",len(vsensors))
-    clouds = [Ball(x=random.randint(600,700),y=random.randint(100,600),r=random.randint(1,15),vx=random.randint(200,200)) for i in range(40)]
+    clouds = [Ball(x=random.randint(550,700),y=random.randint(100,600),r=random.randint(1,15),vx=random.randint(200,200)) for i in range(50)]
     
     #Cria a Fazenda solar
     fazenda = Painel()
@@ -241,7 +241,7 @@ def simula():
             
 #%%
 ####### SIMULAÇÃO PRINCIPAL
-nsimula= 10
+nsimula= 200
 varea = []
 mhac = []
 mhacf = []
@@ -278,8 +278,42 @@ plt.show()
 
 #%% prova
 print(f"Valor medio de calculo de area = {np.mean(varea)},  Em {nsimula}" )
+#%%
 for n in range(nsimula):
-    plt.plot(moving_average(mhac[n],5))
+    data = moving_average(mhac[n],5)
+    xdata = range(len(data))
+    plt.plot(xdata,data)
+    
     #plt.plot(mhacf[n])    
 
+plt.show()
+
+#%%
+max_mhac = np.max(mhac,axis=0)
+max_mhac = moving_average(max_mhac,5)
+max_mhacf = np.max(mhacf,axis=0)
+max_mhacf = moving_average(max_mhacf,5)
+min_mhac = np.min(mhac,axis=0)
+min_mhac = moving_average(min_mhac,5)
+min_mhacf = np.min(mhacf,axis=0)
+min_mhacf = moving_average(min_mhacf,5)
+mean_mhacf = np.mean(mhacf,axis=0)
+mean_mhacf = moving_average(mean_mhacf,5)
+mean_mhac = np.mean(mhac,axis=0)
+mean_mhac = moving_average(mean_mhac,5)
+
+xdata = range(len(min_mhac))
+
+plt.fill_between(xdata, max_mhac, min_mhac,alpha = 0.3,label='_nolegend_')
+plt.plot(xdata, mean_mhac)
+plt.fill_between(xdata, max_mhacf, min_mhacf,alpha = 0.3,label='_nolegend_')
+plt.plot(xdata, mean_mhacf)
+plt.xlabel("tempo")
+plt.ylabel("Sombra (%)")
+plt.legend({"Sombra_nuvens","Sombra_simula"})
+plt.title(f"Acerto  = {np.mean(varea):0.2f}%")
+plt.show()
+
+#%%
+plt.hist(varea)
 plt.show()
