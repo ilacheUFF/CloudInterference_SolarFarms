@@ -130,7 +130,7 @@ def simula():
     sensors = [Sensor(x=800, y=i) for i in range(100,700,distancia_sensores)]
     vsensors = [Sensor(x= 750,y=i) for i in range(100,700,distancia_sensores)] 
     print("Quantidade de sensores = ",len(vsensors))
-    clouds = [Ball(x=random.randint(550,700),y=random.randint(100,600),r=random.randint(1,15),vx=random.randint(200,200)) for i in range(50)]
+    clouds = [Ball(x=random.randint(550,700),y=random.randint(100,600),r=random.randint(1,20),vx=random.randint(200,200)) for i in range(50)]
     
     #Cria a Fazenda solar
     fazenda = Painel()
@@ -241,20 +241,32 @@ def simula():
             
 #%%
 ####### SIMULAÇÃO PRINCIPAL
-nsimula= 200
-varea = []
-mhac = []
-mhacf = []
+nsimula= 10
+varea = np.zeros(nsimula)
+
+mhac =  np.zeros((nsimula,130))
+mhacf = np.zeros((nsimula,130))
+
 for nsim in range (nsimula):
     hac , hacf, area_fazenda = simula()  
-    mhac.append(hac)
-    mhacf.append(hacf)
+    
+    
+    #mhac.append(hac)
+    #mhacf.append(hacf)
+    
+    mhac[nsim ] = hac
+    mhacf[nsim ] = hacf
+    
     sum_hac = sum(hac)
     sum_hacf = sum(hacf)
     area = ( sum_hacf / sum_hac) *100
-    varea.append(area)
-print(varea)    
+    varea[nsim]=area
+    
+pygame.display.quit()
 pygame.quit()
+
+print(varea)    
+
 #%% função da media movel
 def moving_average(a, n=3) :
     ret = np.cumsum(a, dtype=float)
