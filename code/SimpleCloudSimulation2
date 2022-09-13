@@ -20,7 +20,7 @@ y_painel = 400
 alt_p = 300
 lar_p = 150
 
-distancia_sensores = 50 #Numero divisivel por dois, distancia vertical dos sensores
+distancia_sensores = 20 #Numero divisivel por dois, distancia vertical dos sensores
 
 
 
