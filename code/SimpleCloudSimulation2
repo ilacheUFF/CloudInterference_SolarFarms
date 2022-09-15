@@ -20,7 +20,7 @@ y_painel = 400
 alt_p = 300
 lar_p = 150
 
-distancia_sensores = 20 #Numero divisivel por dois, distancia vertical dos sensores
+distancia_sensores = 10 #Numero divisivel por dois, distancia vertical dos sensores
 
 
 
@@ -239,7 +239,7 @@ def simula():
             
 #%%
 ####### SIMULAÇÃO PRINCIPAL
-nsimula= 10
+nsimula= 1000
 varea = np.zeros(nsimula)
 
 mhac =  np.zeros((nsimula,130))
@@ -292,12 +292,16 @@ def moving_average(a, n=3) :
 #area_coberta_fake = [x/area_fazenda for x in hacf]
 
 colornuvem = color=(0.4,0.4,0.4,1)
-plt.plot(moving_average(hac,5),color=colornuvem)
-plt.plot(moving_average(hacf,5),color=(0,0,1,1), linestyle="dashdot" )
+plt.plot(moving_average(hac,5)*100,color=colornuvem,linewidth =3)
+plt.plot(moving_average(hacf,5)*100,color=(0,0,1,1), linestyle="dashdot",linewidth =3 )
 
 plt.legend([f'Real =  {sum_hac:0.2f}',f"Simulado = {sum_hacf:0.2f}"])
 plt.title(f" Sombra total simulada corresponde ao {area:0.1f} % do real")
-
+plt.xlabel("tempo")
+plt.ylabel("Sombra (%)")
+plt.legend(["Sombra_nuvens","Sombra_simul"])
+plt.gca().spines['top'].set_visible(False)
+plt.gca().spines['right'].set_visible(False)
 plt.show()
 
 #%% prova
@@ -320,13 +324,13 @@ if nsimula>1:
     mean_mhac = moving_average(mean_mhac,5)
     xdata = range(len(min_mhac))
     
-    plt.fill_between(xdata, max_mhac, min_mhac,alpha = 0.3,label='_nolegend_',color=colornuvem)
-    plt.plot(xdata, mean_mhac,linewidth =3,color=colornuvem)
-    plt.fill_between(xdata, max_mhacf, min_mhacf,alpha = 0.3,label='_nolegend_')
-    plt.plot(xdata, mean_mhacf,linewidth =3)
+    plt.fill_between(xdata, max_mhac*100, min_mhac*100,alpha = 0.3,label='_nolegend_',color=colornuvem)
+    plt.plot(xdata, mean_mhac*100,linewidth =3,color=colornuvem)
+    plt.fill_between(xdata, max_mhacf*100, min_mhacf*100,alpha = 0.3,label='_nolegend_')
+    plt.plot(xdata, mean_mhacf*100,linewidth =3,linestyle="dashdot")
     plt.xlabel("tempo")
     plt.ylabel("Sombra (%)")
-    plt.legend({"Sombra_nuvens","Sombra_simula"})
+    plt.legend(["Sombra_nuvens","Sombra_simul"])
     plt.title(f"Sombra de {nsimula} simulações / Media  = {np.mean(varea):0.2f}% real")
     plt.gca().spines['top'].set_visible(False)
     plt.gca().spines['right'].set_visible(False)
@@ -337,5 +341,30 @@ if nsimula>1:
 #%%
 plt.hist(varea,bins = 50)
 plt.xlabel("Real / Simulado (%)")
+media =round(np.mean(varea),2)
+plt.vlines(media,0,110,linewidth =3,linestyle="dashdot",color=(1,0,0,0.5))
+plt.annotate(
+# Label and coordinate
+(str(media)+"%"), xy=(media, 100),xytext=(media+10, 80) ,
+horizontalalignment="center",
+# Custom arrow
+arrowprops=dict(arrowstyle='->',lw=1)
+)
+plt.gca().spines['top'].set_visible(False)
+plt.gca().spines['right'].set_visible(False)
+plt.title(f"Histograma das simulações ")
 plt.show()
+
+#%%
+import pandas as pd
+## convert your array into a dataframe
+df = pd.DataFrame (hac)
+df2 = pd.DataFrame (hacf)
+
+## save to csv file
+
+filepath = 'my_hac.csv'
+df.to_csv(filepath, index=False)
+filepath = 'my_hacf.csv'
+df.to_csv(filepath, index=False)
 
