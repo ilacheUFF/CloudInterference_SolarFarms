@@ -358,13 +358,12 @@ plt.show()
 #%%
 import pandas as pd
 ## convert your array into a dataframe
-df = pd.DataFrame (hac)
-df2 = pd.DataFrame (hacf)
+df = pd.DataFrame (mhac)
+df2 = pd.DataFrame (mhacf)
 
 ## save to csv file
 
 filepath = 'my_hac.csv'
-df.to_csv(filepath, index=False)
+df.to_csv(filepath, index=False,mode = 'a+',header=False)
 filepath = 'my_hacf.csv'
-df.to_csv(filepath, index=False)
-
+df2.to_csv(filepath, index=False,mode = 'a+',header=False)
