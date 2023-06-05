@@ -239,7 +239,7 @@ def simula():
             
 #%%
 ####### SIMULAÇÃO PRINCIPAL
-nsimula= 1000
+nsimula= 10
 varea = np.zeros(nsimula)
 
 mhac =  np.zeros((nsimula,130))
